@@ -9,13 +9,16 @@
 - 使用Whisper模型进行离线语音识别
 - 生成标准SRT格式字幕文件
 - 支持多语言识别
+- 自动语言检测，智能处理翻译
 - 自动分段生成字幕
 - 支持多种字幕格式（原文、中文、双字幕）
 
 ## 安装要求
 
-1. Python 3.6+
-2. 安装依赖包：
+1. Python 3.8+
+2. FFmpeg
+3. CUDA（可选，用于GPU加速）
+4. 安装依赖包：
 ```bash
 pip install -r requirements.txt
 ```
@@ -32,9 +35,9 @@ python speech_to_subtitle.py input_file.mp4 output_subtitle.srt
 python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --language en
 ```
 
-选择不同的模型大小：
+选择不同的模型大小（默认为tiny）：
 ```bash
-python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --model large
+python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --model base
 ```
 
 选择字幕类型：
@@ -57,7 +60,7 @@ python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --subtitle-type 
 
 ## 模型大小说明
 
-- tiny: 最小模型，速度最快，准确度较低
+- tiny: 最小模型，速度最快，准确度较低（默认）
 - base: 基础模型，平衡速度和准确度
 - small: 小型模型，较好的准确度
 - medium: 中型模型，高准确度
@@ -69,7 +72,8 @@ python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --subtitle-type 
 2. 较大的模型需要更多的内存和计算资源
 3. 确保音频/视频质量清晰以获得更好的识别效果
 4. 处理视频文件时，会先提取音频再进行识别
-5. 生成中文或双字幕时，会额外进行翻译处理
+5. 程序会自动检测音频语言，对于中文内容会自动跳过翻译步骤
+6. 使用GPU可以显著提升处理速度
 
 ## 支持的文件格式
 
@@ -77,7 +81,6 @@ python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --subtitle-type 
 - MP3 (.mp3)
 - WAV (.wav)
 - OGG (.ogg)
-
 - FLAC (.flac)
 - M4A (.m4a)
 
@@ -98,6 +101,12 @@ Whisper支持多种语言，包括但不限于：
 - 法语：fr
 - 德语：de
 - 西班牙语：es
+
+## 常见问题
+
+1. 如果遇到FFmpeg相关错误，请确保正确安装了FFmpeg并添加到系统环境变量
+2. 如果遇到CUDA相关错误，可以尝试使用CPU版本
+3. 对于较长的音频文件，建议使用较小的模型（tiny或base）以提高处理速度
 
 ## 支持的语言代码
 

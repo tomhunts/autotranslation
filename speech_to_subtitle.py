@@ -20,6 +20,22 @@ class SpeechToSubtitle:
         self.translator = None
         self.tokenizer = None
         
+    def detect_language(self, audio_file):
+        """检测音频文件的语言"""
+        try:
+            # 使用Whisper进行语言检测
+            result = self.model.transcribe(
+                audio_file,
+                task="transcribe",
+                language=None  # 设置为None以启用自动语言检测
+            )
+            detected_language = result["language"]
+            print(f"检测到的语言: {detected_language}")
+            return detected_language
+        except Exception as e:
+            print(f"语言检测过程中出现错误: {str(e)}")
+            return None
+        
     def init_translator(self, source_lang='en', target_lang='zh'):
         """初始化翻译模型
         source_lang: 源语言代码
@@ -172,16 +188,30 @@ class SpeechToSubtitle:
                     return
                 temp_files.append(audio_file)
             
+            # 检测语言
+            print("正在检测音频语言...")
+            detected_language = self.detect_language(audio_file)
+            
+            if detected_language is None:
+                print("无法检测语言，将使用默认语言设置")
+                detected_language = language
+            
             # 生成原文字幕
-            print("正在生成原文字幕...")
-            segments = self.transcribe_audio(audio_file, language=language)
+            print(f"正在生成{detected_language}字幕...")
+            segments = self.transcribe_audio(audio_file, language=detected_language)
             
             if segments:
-                if subtitle_type in ['chinese', 'dual']:
+                # 如果是中文内容，且需要中文或双字幕，直接使用原文
+                if detected_language == 'zh' and subtitle_type in ['chinese', 'dual']:
+                    print("检测到中文内容，无需翻译")
+                    if subtitle_type == 'dual':
+                        for segment in segments:
+                            segment['chinese_text'] = segment['text']
+                # 如果是其他语言，且需要中文或双字幕，进行翻译
+                elif detected_language != 'zh' and subtitle_type in ['chinese', 'dual']:
                     print("正在翻译成中文...")
-                    # 翻译每个片段
                     for segment in segments:
-                        translated_text = self.translate_text(segment['text'], source_lang=language, target_lang='zh')
+                        translated_text = self.translate_text(segment['text'], source_lang=detected_language, target_lang='zh')
                         if subtitle_type == 'chinese':
                             segment['text'] = translated_text
                         else:  # dual
@@ -213,7 +243,7 @@ def main():
     parser.add_argument('input_file', help='输入音频或视频文件路径')
     parser.add_argument('output_file', help='输出字幕文件路径')
     parser.add_argument('--language', default='zh', help='识别语言 (默认: zh)')
-    parser.add_argument('--model', default='base', 
+    parser.add_argument('--model', default='tiny', 
                       choices=['tiny', 'base', 'small', 'medium', 'large'],
                       help='Whisper模型大小 (默认: base)')
     parser.add_argument('--subtitle-type', default='original',
