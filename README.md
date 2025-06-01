@@ -108,6 +108,35 @@ Whisper支持多种语言，包括但不限于：
 2. 如果遇到CUDA相关错误，可以尝试使用CPU版本
 3. 对于较长的音频文件，建议使用较小的模型（tiny或base）以提高处理速度
 
+## CUDA支持
+
+本程序支持使用CUDA进行GPU加速，可以显著提升处理速度。要检查CUDA是否可用，可以运行以下脚本：
+
+```bash
+python check_cuda.py
+```
+
+该脚本会显示：
+- CUDA是否可用
+- CUDA版本（如果可用）
+- 当前GPU设备信息
+- Whisper模型运行设备
+- PyTorch版本和CUDA配置
+
+要启用CUDA加速，需要：
+1. 安装NVIDIA显卡驱动
+2. 安装CUDA Toolkit
+3. 安装支持CUDA的PyTorch版本：
+```bash
+pip uninstall torch
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+注意事项：
+- 需要NVIDIA显卡才能使用CUDA
+- 即使没有CUDA，程序也能正常运行，只是速度会慢一些
+- 对于较小的模型（如tiny），CPU和GPU的差异可能不太明显
+
 ## 支持的语言代码
 
 - 中文：zh-CN
