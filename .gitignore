@@ -1,0 +1,21 @@
+# 忽略所有的 .log 文件
+*.mp4
+
+# 忽略 node_modules 文件夹（前端项目常见）
+node_modules/
+
+# 忽略所有的 .env 文件（存环境变量，防止泄露）
+.env
+
+# 忽略所有的临时文件和系统文件
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# 忽略特定目录
+/dist
+/build
+
+# 忽略某个具体文件
+secret_config.json

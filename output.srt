@@ -1,0 +1,10 @@
+1
+00:00:00,000 --> 00:00:07,000
+You got one part of that wrong.
+ You got one part of that wrong.
+
+2
+00:00:07,000 --> 00:00:11,000
+This is not a math.
+ This is not a math.
+
