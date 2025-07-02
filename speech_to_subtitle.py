@@ -1,4 +1,6 @@
 import os
+os.environ['http_proxy'] = 'http://127.0.0.1:10809'
+os.environ['https_proxy'] = 'http://127.0.0.1:10809'
 import whisper
 from pydub import AudioSegment
 import srt
@@ -9,6 +11,7 @@ import tempfile
 import shutil
 from transformers import MarianMTModel, MarianTokenizer
 import torch
+from googletrans import Translator
 
 class SpeechToSubtitle:
     def __init__(self, model_size="base"):
@@ -19,6 +22,7 @@ class SpeechToSubtitle:
         # 初始化翻译模型
         self.translator = None
         self.tokenizer = None
+        self.google_translator = None
         
     def detect_language(self, audio_file):
         """检测音频文件的语言"""
@@ -61,26 +65,16 @@ class SpeechToSubtitle:
                 if torch.cuda.is_available():
                     self.translator = self.translator.cuda()
         
-    def translate_text(self, text, source_lang='en', target_lang='zh'):
-        """使用 MarianMT 模型翻译文本"""
+    def translate_text(self, text, source_lang='auto', target_lang='zh-cn'):
+        """使用 Google Translate 翻译文本"""
         try:
+            if not hasattr(self, 'google_translator') or self.google_translator is None:
+                from googletrans import Translator
+                self.google_translator = Translator()
             if not text.strip():
                 return ""
-                
-            self.init_translator(source_lang, target_lang)
-            
-            # 对文本进行分词
-            inputs = self.tokenizer(text, return_tensors="pt", padding=True)
-            if torch.cuda.is_available():
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            # 生成翻译
-            translated = self.translator.generate(**inputs)
-            
-            # 解码翻译结果
-            translated_text = self.tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
-            return translated_text
-            
+            result = self.google_translator.translate(text, src=source_lang, dest=target_lang)
+            return result.text
         except Exception as e:
             print(f"翻译过程中出现错误: {str(e)}")
             return text
@@ -238,9 +232,29 @@ class SpeechToSubtitle:
                     except Exception as e:
                         print(f"清理临时文件时出错: {str(e)}")
 
+    def translate_srt_file(self, input_srt, output_srt, target_lang='zh-cn', subtitle_type='chinese'):
+        """对现有SRT字幕文件进行翻译，支持dual/chinese/original输出"""
+        with open(input_srt, 'r', encoding='utf-8') as f:
+            subs = list(srt.parse(f.read()))
+        translated_subs = []
+        for sub in subs:
+            original_text = sub.content
+            if subtitle_type == 'original':
+                new_content = original_text
+            else:
+                translated = self.translate_text(original_text, source_lang='auto', target_lang=target_lang)
+                if subtitle_type == 'dual':
+                    new_content = f"{original_text}\n{translated}"
+                else:  # chinese
+                    new_content = translated
+            translated_subs.append(srt.Subtitle(index=sub.index, start=sub.start, end=sub.end, content=new_content))
+        with open(output_srt, 'w', encoding='utf-8') as f:
+            f.write(srt.compose(translated_subs))
+        print(f"翻译后的字幕文件已生成: {output_srt}")
+
 def main():
-    parser = argparse.ArgumentParser(description='将音频或视频文件转换为字幕文件')
-    parser.add_argument('input_file', help='输入音频或视频文件路径')
+    parser = argparse.ArgumentParser(description='将音频或视频文件/字幕文件转换为字幕文件')
+    parser.add_argument('input_file', help='输入音频、视频或字幕文件路径')
     parser.add_argument('output_file', help='输出字幕文件路径')
     parser.add_argument('--language', default='zh', help='识别语言 (默认: zh)')
     parser.add_argument('--model', default='tiny', 
@@ -249,11 +263,14 @@ def main():
     parser.add_argument('--subtitle-type', default='original',
                       choices=['original', 'chinese', 'dual'],
                       help='字幕类型: original(原文), chinese(中文), dual(双字幕)')
-    
+    parser.add_argument('--translate-srt', action='store_true', help='对现有SRT字幕文件进行翻译')
+    parser.add_argument('--target-lang', default='zh-cn', help='翻译目标语言 (默认: zh-cn)')
     args = parser.parse_args()
-    
     converter = SpeechToSubtitle(model_size=args.model)
-    converter.process_media(args.input_file, args.output_file, args.language, args.subtitle_type)
+    if args.translate_srt:
+        converter.translate_srt_file(args.input_file, args.output_file, args.target_lang, args.subtitle_type)
+    else:
+        converter.process_media(args.input_file, args.output_file, args.language, args.subtitle_type)
 
 if __name__ == "__main__":
     main() 

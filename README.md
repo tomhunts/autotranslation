@@ -52,11 +52,28 @@ python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --subtitle-type 
 python speech_to_subtitle.py input_file.mp4 output_subtitle.srt --subtitle-type dual
 ```
 
+### 对现有SRT字幕文件进行翻译
+
+只输出翻译（如翻译成中文）：
+```bash
+python speech_to_subtitle.py input.srt output.srt --translate-srt --target-lang zh-cn --subtitle-type chinese
+```
+
+输出双语字幕（原文+翻译）：
+```bash
+python speech_to_subtitle.py input.srt output.srt --translate-srt --target-lang zh-cn --subtitle-type dual
+```
+
+只保留原文（等同于复制）：
+```bash
+python speech_to_subtitle.py input.srt output.srt --translate-srt --subtitle-type original
+```
+
 ## 字幕类型说明
 
-- original: 生成原始语言字幕
-- chinese: 生成中文翻译字幕
-- dual: 生成双字幕（原文在上，中文在下）
+- original: 生成原始语言字幕或保留原文
+- chinese: 生成中文翻译字幕（或指定目标语言的翻译）
+- dual: 生成双字幕（原文在上，翻译在下）
 
 ## 模型大小说明
 
